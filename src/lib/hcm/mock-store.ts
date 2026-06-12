@@ -12,8 +12,10 @@ export const employees: HcmEmployee[] = [
 ]
 
 const balanceMap = new Map<string, HcmBalance>()
+const requestMap = new Map<string, HcmRequest>()
+let requestCounter = 1
 
-;(function seedBalances() {
+function seedBalances() {
   const seeds: Array<{ employeeId: string; locationId: LeaveType; total: number }> = [
     { employeeId: 'emp-001', locationId: 'annual', total: 15 },
     { employeeId: 'emp-001', locationId: 'sick', total: 10 },
@@ -34,10 +36,9 @@ const balanceMap = new Map<string, HcmBalance>()
       total,
     })
   }
-})()
+}
 
-const requestMap = new Map<string, HcmRequest>()
-let requestCounter = 1
+seedBalances()
 
 // Module-level SSE subscriber registry (single-process dev pattern).
 // Production upgrade: replace this Set with a Redis pub/sub subscriber list;
@@ -197,6 +198,14 @@ export function triggerAnniversaryBonus(
       timestamp: Date.now(),
     })
   }, delayMs)
+}
+
+export function resetStore(): void {
+  balanceMap.clear()
+  seedBalances()
+  requestMap.clear()
+  requestCounter = 1
+  silentFailMode = false
 }
 
 export { LEAVE_TYPES }

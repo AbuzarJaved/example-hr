@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server'
-import { isSilentFailMode, toggleSilentFail, triggerAnniversaryBonus } from '@/lib/hcm/mock-store'
+import { isSilentFailMode, resetStore, toggleSilentFail, triggerAnniversaryBonus } from '@/lib/hcm/mock-store'
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
@@ -27,6 +27,11 @@ export async function POST(request: NextRequest) {
 
     case 'status': {
       return Response.json({ ok: true, silentFailMode: isSilentFailMode() })
+    }
+
+    case 'reset_store': {
+      resetStore()
+      return Response.json({ ok: true, message: 'Store reset to initial seed state' })
     }
 
     default:

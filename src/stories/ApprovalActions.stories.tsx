@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { http, HttpResponse } from 'msw'
+import { within, userEvent, expect } from 'storybook/test'
 import { ApprovalActions } from '@/components/manager/ApprovalActions'
 import { makeRequest, sseHandler } from './mocks/handlers'
 
@@ -29,6 +30,18 @@ export const Idle: Story = {
         sseHandler(),
       ],
     },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    // Verify both action buttons are present before interaction
+    await expect(canvas.getByRole('button', { name: 'Approve request' })).toBeInTheDocument()
+    await expect(canvas.getByRole('button', { name: 'Deny request' })).toBeInTheDocument()
+
+    // Click approve — mutation resolves immediately (MSW handler returns approved)
+    await userEvent.click(canvas.getByRole('button', { name: 'Approve request' }))
+
+    // Post-mutation: component shows "Approved ✓" feedback
+    await expect(canvas.findByText('Approved ✓')).resolves.toBeInTheDocument()
   },
 }
 
