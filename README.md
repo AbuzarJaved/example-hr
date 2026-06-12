@@ -1,36 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ExampleHR — Time-Off Module
 
-## Getting Started
+Frontend assessment: optimistic time-off requests with HCM (Workday/SAP) as the authoritative source of truth.
 
-First, run the development server:
+## Architecture
+
+- **Next.js 16.2.9** (App Router, Turbopack)
+- **React 19** (Server + Client Components)
+- **TanStack Query v5** — server state, cache invalidation via SSE
+- **Reservation Ledger** — `useReducer` + `localStorage` + `BroadcastChannel` for optimistic cross-tab state
+- **MSW v2** — Storybook story-level HTTP mocking
+- **Storybook 10.4.4** (`@storybook/nextjs-vite`) — UI state catalog + interaction tests
+- **Vitest 3** — unit + integration tests (52 passing)
+- **Playwright** — E2E tests against live Next.js dev server
+
+See [TRD.md](./TRD.md) for the full architecture decision record.
+
+## Quick Start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev          # App on http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Navigate to `/employee` (Alice's dashboard) or `/manager` (Diana's approval queue).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Commands
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Development
+npm run dev           # Next.js dev server (Turbopack) on :3000
+npm run build         # Production build
+npm run lint          # ESLint
 
-## Learn More
+# Testing
+npm run test          # Vitest — unit + integration (52 tests)
+npm run test:watch    # Vitest in watch mode
+npm run coverage      # Coverage report (target: 80%+ on src/lib/)
+npm run test:e2e      # Playwright E2E (requires dev server running on :3000)
+npm run test:e2e:ui   # Playwright interactive mode
 
-To learn more about Next.js, take a look at the following resources:
+# Storybook
+npm run storybook     # Storybook on http://localhost:6006
+npm run build-storybook  # Static Storybook build
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Deployment
+npm run chromatic     # Publish Storybook to Chromatic for visual review
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Key Invariants
 
-## Deploy on Vercel
+1. **`displayedAvailable` is never negative** — the submit button disables when `days > available`.
+2. **Pending reservations survive HCM background refreshes** — only explicit actions (CONFIRM / ROLLBACK / EXPIRE / SILENT_FAILURE_DETECTED) change reservation state.
+3. **Manager always sees a fresh balance at decision time** — `BalanceAtDecisionTime` uses `staleTime: 0`.
+4. **Silent failures show a toast** — 3 graduated verification fetches at t+1500/3500/7500 ms before declaring failure.
+5. **`dispatch` is never exported** — all state transitions go through named methods in `useReservations`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Project Structure
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+├── app/                   # Next.js App Router pages + API routes
+│   ├── api/hcm/           # Mock HCM: balance, requests, SSE, debug
+│   ├── employee/          # Employee dashboard (EmployeeView)
+│   └── manager/           # Manager approval queue (ManagerView)
+├── components/
+│   ├── balance/           # BalanceCard, BalanceGrid, StaleIndicator
+│   ├── manager/           # PendingRequestCard, ApprovalActions, BalanceAtDecisionTime
+│   ├── request/           # RequestForm, RequestList, OptimisticRequestRow
+│   └── ui/                # Badge, Banner, Dialog, Spinner
+├── lib/
+│   ├── hcm/               # Mock store, typed client, HCM types
+│   ├── query/             # TanStack Query hooks (useBalance, useSubmitRequest, …)
+│   └── reservations/      # Ledger reducer, persistence, BroadcastChannel context
+├── stories/               # Storybook stories + MSW handlers/scenarios
+└── tests/
+    ├── unit/              # Reducer, persistence, expiry unit tests
+    └── integration/       # Hook integration tests (MockEventSource + MSW)
+tests/e2e/                 # Playwright E2E specs
+TRD.md                     # Architecture decision record
+```
