@@ -3,12 +3,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { initialize, mswLoader } from 'msw-storybook-addon'
 import React from 'react'
 import { Toaster } from 'react-hot-toast'
+import { ReservationProvider } from '../src/lib/reservations/ReservationContext'
 import '../src/app/globals.css'
 
-// Initialize MSW
-initialize({
-  onUnhandledRequest: 'bypass',
-})
+initialize({ onUnhandledRequest: 'bypass' })
 
 const preview: Preview = {
   parameters: {
@@ -18,17 +16,8 @@ const preview: Preview = {
         date: /Date$/i,
       },
     },
-
-    msw: {
-      handlers: [],
-    },
-
-    a11y: {
-      // 'todo' - show a11y violations in the test UI only
-      // 'error' - fail CI on a11y violations
-      // 'off' - skip a11y checks entirely
-      test: 'todo'
-    }
+    msw: { handlers: [] },
+    a11y: { test: 'todo' },
   },
   loaders: [mswLoader],
   decorators: [
@@ -41,8 +30,10 @@ const preview: Preview = {
       })
       return (
         <QueryClientProvider client={queryClient}>
-          <Story />
-          <Toaster position="bottom-right" />
+          <ReservationProvider>
+            <Story />
+            <Toaster position="bottom-right" />
+          </ReservationProvider>
         </QueryClientProvider>
       )
     },
