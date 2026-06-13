@@ -55,6 +55,13 @@ export const Approving: Story = {
       ],
     },
   },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    // Click approve — MSW hangs the request so isPending stays true
+    await userEvent.click(canvas.getByRole('button', { name: 'Approve request' }))
+    // Button should now be disabled with spinner
+    await expect(canvas.getByRole('button', { name: 'Approve request' })).toBeDisabled()
+  },
 }
 
 export const Denying: Story = {
@@ -65,6 +72,16 @@ export const Denying: Story = {
         sseHandler(),
       ],
     },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    // Open the deny dialog
+    await userEvent.click(canvas.getByRole('button', { name: 'Deny request' }))
+    // Confirm deny — MSW hangs the request so isDenying stays true
+    const dialog = canvas.getByRole('dialog')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Deny Request' }))
+    // Confirm button should be disabled/loading
+    await expect(within(dialog).getByRole('button', { name: 'Deny Request' })).toBeDisabled()
   },
 }
 
@@ -78,5 +95,11 @@ export const ApproveError: Story = {
         sseHandler(),
       ],
     },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(canvas.getByRole('button', { name: 'Approve request' }))
+    // After 422 the mutation isError=true; buttons remain visible (not actioned)
+    await expect(canvas.getByRole('button', { name: 'Approve request' })).toBeInTheDocument()
   },
 }
