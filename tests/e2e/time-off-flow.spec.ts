@@ -98,8 +98,8 @@ test.describe('Time-off flow — employee submits, manager approves', () => {
     await expect(page.getByRole('dialog')).toBeVisible()
     await page.fill('#deny-notes', 'Peak period — insufficient cover')
 
-    // Confirm denial in dialog
-    await page.getByRole('button', { name: 'Deny Request' }).click()
+    // Confirm denial in dialog — scoped to dialog to avoid matching the card's "Deny request" button
+    await page.getByRole('dialog').getByRole('button', { name: 'Deny Request' }).click()
 
     // Denial confirmation
     await expect(page.getByText('Denied ✓')).toBeVisible({ timeout: 5_000 })
